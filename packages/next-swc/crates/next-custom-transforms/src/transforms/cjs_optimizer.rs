@@ -70,23 +70,6 @@ impl CjsOptimizer {
 }
 
 impl VisitMut for CjsOptimizer {
-    noop_visit_mut_type!();
-
-    fn visit_mut_stmts(&mut self, n: &mut std::vec::Vec<Stmt>) {
-        let old_extra_stmts = self.data.extra_stmts.take();
-
-        n.visit_mut_children_with(self);
-
-        self.data.extra_stmts = old_extra_stmts;
-    }
-
-    fn visit_mut_module_items(&mut self, stmts: &mut Vec<ModuleItem>) {
-        self.data.is_prepass = true;
-        stmts.visit_mut_children_with(self);
-        self.data.is_prepass = false;
-        stmts.visit_mut_children_with(self);
-    }
-
     fn visit_mut_expr(&mut self, e: &mut Expr) {
         e.visit_mut_children_with(self);
 
@@ -186,6 +169,13 @@ impl VisitMut for CjsOptimizer {
         n.visit_mut_children_with(&mut IdentRenamer::new(&self.data.rename_map));
     }
 
+    fn visit_mut_module_items(&mut self, stmts: &mut Vec<ModuleItem>) {
+        self.data.is_prepass = true;
+        stmts.visit_mut_children_with(self);
+        self.data.is_prepass = false;
+        stmts.visit_mut_children_with(self);
+    }
+
     fn visit_mut_script(&mut self, n: &mut Script) {
         n.visit_children_with(&mut Analyzer {
             data: &mut self.data,
@@ -207,6 +197,14 @@ impl VisitMut for CjsOptimizer {
                 n.take();
             }
         }
+    }
+
+    fn visit_mut_stmts(&mut self, n: &mut std::vec::Vec<Stmt>) {
+        let old_extra_stmts = self.data.extra_stmts.take();
+
+        n.visit_mut_children_with(self);
+
+        self.data.extra_stmts = old_extra_stmts;
     }
 
     fn visit_mut_var_declarator(&mut self, n: &mut VarDeclarator) {
@@ -257,6 +255,8 @@ impl VisitMut for CjsOptimizer {
         // We make `name` invalid if we should drop it.
         n.retain(|v| !v.name.is_invalid());
     }
+
+    noop_visit_mut_type!();
 }
 
 struct Analyzer<'a> {
