@@ -72,6 +72,14 @@ impl CjsOptimizer {
 impl VisitMut for CjsOptimizer {
     noop_visit_mut_type!();
 
+    fn visit_mut_stmts(&mut self, n: &mut std::vec::Vec<Stmt>) {
+        let old_extra_stmts = self.data.extra_stmts.take();
+
+        n.visit_mut_children_with(self);
+
+        self.data.extra_stmts = old_extra_stmts;
+    }
+
     fn visit_mut_module_items(&mut self, stmts: &mut Vec<ModuleItem>) {
         self.data.is_prepass = true;
         stmts.visit_mut_children_with(self);
